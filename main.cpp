@@ -1,178 +1,178 @@
 #include <iostream>
 #include <string>
-#include <mysql/mysql.h>
-#include <limits>
+#include <vector>
+#include <mysql/mysql.h> // подключаем библиотеку mysql
+using namespace std;
 
-// параметры подключения к базе данных
-const char* HOST = "localhost";
-const char* USER = "root";
-const char* PASSWORD = "password"; // замените на ваш пароль
-const char* DATABASE = "testdb";
+// данные для подключения к БД
+const string DB_HOST = "localhost";
+const string DB_USER = "root";
+const string DB_PASS = "password";
+const string DB_NAME = "bus_schedule";
 
-MYSQL* conn;
-std::string currentUserRole;
+// структура для рейсов
+struct Flight {
+    int id;
+    string flight_number;
+    string bus_type;
+    string destination;
+    string departure_time;
+    string arrival_time;
+};
 
-void clearInputBuffer() {
-    std::cin.clear();
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+// структура для пользователей
+struct User {
+    int id;
+    string login;
+    string password;
+    string role;
+};
+
+MYSQL* connectDB() {
+    MYSQL* conn = mysql_init(0);
+    conn = mysql_real_connect(conn, DB_HOST.c_str(), DB_USER.c_str(), DB_PASS.c_str(), DB_NAME.c_str(), 0, NULL, 0);
+    if (conn) {
+        cout << "успешное подключение к базе данных!" << endl;
+    } else {
+        cerr << "ошибка подключения: " << mysql_error(conn) << endl;
+        exit(1);
+    }
+    return conn;
 }
 
-void executeSQL(const std::string& sql) {
-    if (mysql_query(conn, sql.c_str())) {
-        std::cerr << "ошибка MySQL: " << mysql_error(conn) << std::endl;
+bool checkLogin(MYSQL* conn, const string& login, const string& password, User& user) {
+    string query = "SELECT id, role FROM users WHERE login='" + login + "' AND password='" + password + "';";
+    if (mysql_query(conn, query.c_str()) == 0) {
+        MYSQL_RES* res = mysql_store_result(conn);
+        MYSQL_ROW row = mysql_fetch_row(res);
+        if (row) {
+            user.id = stoi(row[0]);
+            user.login = login;
+            user.role = row[1];
+            return true;
+        }
     }
-}
-
-void createTrip() {
-    if (currentUserRole != "admin") {
-        std::cout << "доступ запрещен." << std::endl;
-        return;
-    }
-
-    std::string number, busType, destination, departureTime, arrivalTime;
-    std::cout << "введите номер рейса: ";
-    clearInputBuffer();
-    std::getline(std::cin, number);
-    std::cout << "введите тип автобуса: ";
-    std::getline(std::cin, busType);
-    std::cout << "введите пункт назначения: ";
-    std::getline(std::cin, destination);
-    std::cout << "введите время отправления (YYYY-MM-DD HH:MM:SS): ";
-    std::getline(std::cin, departureTime);
-    std::cout << "введите время прибытия (YYYY-MM-DD HH:MM:SS): ";
-    std::getline(std::cin, arrivalTime);
-
-    std::string sql = "INSERT INTO trips (number, bus_type, destination, departure_time, arrival_time) VALUES ('" + 
-                     number + "', '" + busType + "', '" + destination + "', '" + departureTime + "', '" + arrivalTime + "');";
-    executeSQL(sql);
-
-    std::cout << "рейс добавлен." << std::endl;
-}
-
-void registerUser() {
-    std::string login, password, role;
-    std::cout << "введите логин: ";
-    clearInputBuffer();
-    std::getline(std::cin, login);
-    std::cout << "введите пароль: ";
-    std::getline(std::cin, password);
-    std::cout << "введите роль (admin/user): ";
-    std::getline(std::cin, role);
-
-    std::string sql = "INSERT INTO users (login, password, role) VALUES ('" + login + "', '" + password + "', '" + role + "');";
-    executeSQL(sql);
-
-    std::cout << "юзер успешно зарегистрирован." << std::endl;
-}
-
-void readTrips() {
-    std::string query = "SELECT * FROM trips;";
-    if (mysql_query(conn, query.c_str())) {
-        std::cerr << "ошибка MySQL: " << mysql_error(conn) << std::endl;
-        return;
-    }
-
-    MYSQL_RES* res = mysql_store_result(conn);
-    MYSQL_ROW row;
-
-    std::cout << "список рейсов:" << std::endl;
-    while ((row = mysql_fetch_row(res))) {
-        std::cout << "номер рейса: " << row[1] << ", тип автобуса: " << row[2]
-                  << ", пункт назначения: " << row[3] << ", отправление: " << row[4]
-                  << ", прибытие: " << row[5] << std::endl;
-    }
-    mysql_free_result(res);
-}
-
-void findTripsByCriteria() {
-    std::string destination, time;
-    std::cout << "введите пункт назначения: ";
-    clearInputBuffer();
-    std::getline(std::cin, destination);
-    std::cout << "введите время отправления или прибытия (YYYY-MM-DD HH:MM:SS): ";
-    std::getline(std::cin, time);
-
-    std::string query = "SELECT * FROM trips WHERE destination = '" + destination + "' AND "
-                        "(departure_time = '" + time + "' OR arrival_time = '" + time + "');";
-    if (mysql_query(conn, query.c_str())) {
-        std::cerr << "ошибка MySQL: " << mysql_error(conn) << std::endl;
-        return;
-    }
-
-    MYSQL_RES* res = mysql_store_result(conn);
-    MYSQL_ROW row;
-
-    std::cout << "найденные рейсы:" << std::endl;
-    while ((row = mysql_fetch_row(res))) {
-        std::cout << "номер рейса: " << row[1] << ", тип автобуса: " << row[2]
-                  << ", пункт назначения: " << row[3] << ", отправление: " << row[4]
-                  << ", прибытие: " << row[5] << std::endl;
-    }
-    mysql_free_result(res);
-}
-
-bool loginUser() {
-    std::string login, password;
-    std::cout << "логин: ";
-    clearInputBuffer();
-    std::getline(std::cin, login);
-    std::cout << "пароль: ";
-    std::getline(std::cin, password);
-
-    std::string query = "SELECT role FROM users WHERE login = '" + login + "' AND password = '" + password + "' LIMIT 1;";
-    if (mysql_query(conn, query.c_str())) {
-        std::cerr << "ошибка MySQL: " << mysql_error(conn) << std::endl;
-        return false;
-    }
-
-    MYSQL_RES* res = mysql_store_result(conn);
-    MYSQL_ROW row = mysql_fetch_row(res);
-    if (row) {
-        currentUserRole = row[0];
-        std::cout << "успешный вход! ваша роль: " << currentUserRole << std::endl;
-        mysql_free_result(res);
-        return true;
-    }
-
-    std::cout << "неверные логин или пароль." << std::endl;
-    mysql_free_result(res);
     return false;
 }
 
-void menu() {
-    int choice;
-    do {
-        std::cout << "\nменю:\n";
-        if (currentUserRole == "admin") {
-            std::cout << "1. добавить рейс\n";
-            std::cout << "2. регистрация юзера\n";
+void registerUser(MYSQL* conn) {
+    string login, password;
+    cout << "введите логин: ";
+    cin >> login;
+    cout << "введите пароль: ";
+    cin >> password;
+
+    string query = "INSERT INTO users (login, password, role) VALUES ('" + login + "', '" + password + "', 'user');";
+    if (mysql_query(conn, query.c_str()) == 0) {
+        cout << "пользователь успешно зарегистрирован!\n";
+    } else {
+        cerr << "ошибка регистрации: " << mysql_error(conn) << endl;
+    }
+}
+
+void showAllFlights(MYSQL* conn) {
+    string query = "SELECT * FROM flights;";
+    if (mysql_query(conn, query.c_str()) == 0) {
+        MYSQL_RES* res = mysql_store_result(conn);
+        MYSQL_ROW row;
+        cout << "список рейсов:\n";
+        while ((row = mysql_fetch_row(res))) {
+            cout << "номер рейса: " << row[1]
+                 << ", тип автобуса: " << row[2]
+                 << ", пункт назначения: " << row[3]
+                 << ", время отправления: " << row[4]
+                 << ", время прибытия: " << row[5] << endl;
         }
-        std::cout << "3. просмотр всех рейсов\n";
-        std::cout << "4. найти рейсы по критериям\n";
-        std::cout << "0. выход\n";
-        std::cout << "выберите действие: ";
-        std::cin >> choice;
-        clearInputBuffer();
+        mysql_free_result(res);
+    } else {
+        cerr << "ошибка выполнения запроса: " << mysql_error(conn) << endl;
+    }
+}
+
+void addFlight(MYSQL* conn) {
+    string flight_number, bus_type, destination, departure_time, arrival_time;
+    cout << "введите номер рейса: ";
+    cin >> flight_number;
+    cout << "введите тип автобуса: ";
+    cin >> bus_type;
+    cout << "введите пункт назначения: ";
+    cin >> destination;
+    cout << "введите время отправления (YYYY-MM-DD HH:MM): ";
+    cin >> departure_time;
+    cout << "введите время прибытия (YYYY-MM-DD HH:MM): ";
+    cin >> arrival_time;
+
+    string query = "INSERT INTO flights (flight_number, bus_type, destination, departure_time, arrival_time) VALUES ('" +
+                   flight_number + "', '" + bus_type + "', '" + destination + "', '" + departure_time + "', '" + arrival_time + "');";
+
+    if (mysql_query(conn, query.c_str()) == 0) {
+        cout << "рейс успешно добавлен!\n";
+    } else {
+        cerr << "ошибка добавления рейса: " << mysql_error(conn) << endl;
+    }
+}
+
+void adminMenu(MYSQL* conn) {
+    int choice;
+    while (true) {
+        cout << "\n1. показать все рейсы\n2. добавить рейс\n3. выйти\n";
+        cout << "выберите действие: ";
+        cin >> choice;
 
         switch (choice) {
-            case 1: if (currentUserRole == "admin") createTrip(); break;
-            case 2: if (currentUserRole == "admin") registerUser(); break;
-            case 3: readTrips(); break;
-            case 4: findTripsByCriteria(); break;
-            case 0: std::cout << "выход из программы.\n"; break;
-            default: std::cout << "неверный выбор.\n";
+            case 1: showAllFlights(conn); break;
+            case 2: addFlight(conn); break;
+            case 3: return;
+            default: cout << "неверный выбор!\n";
         }
-    } while (choice != 0);
+    }
+}
+
+void userMenu(MYSQL* conn) {
+    int choice;
+    while (true) {
+        cout << "\n1. показать все рейсы\n2. выйти\n";
+        cout << "выберите действие: ";
+        cin >> choice;
+
+        switch (choice) {
+            case 1: showAllFlights(conn); break;
+            case 2: return;
+            default: cout << "неверный выбор!\n";
+        }
+    }
 }
 
 int main() {
-    conn = mysql_init(nullptr);
-    if (!mysql_real_connect(conn, HOST, USER, PASSWORD, DATABASE, 0, nullptr, 0)) {
-        std::cerr << "ошибка подключения: " << mysql_error(conn) << std::endl;
-        return 1;
-    }
+    MYSQL* conn = connectDB();
+    User currentUser;
 
-    if (loginUser()) menu();
+    int action;
+    cout << "1. войти\n2. зарегистрироваться\nвыберите действие: ";
+    cin >> action;
+
+    if (action == 1) {
+        string login, password;
+        cout << "введите логин: ";
+        cin >> login;
+        cout << "введите пароль: ";
+        cin >> password;
+
+        if (checkLogin(conn, login, password, currentUser)) {
+            cout << "добро пожаловать, " << currentUser.login << "!\n";
+            if (currentUser.role == "admin") {
+                adminMenu(conn);
+            } else {
+                userMenu(conn);
+            }
+        } else {
+            cout << "неверный логин или пароль!\n";
+        }
+    } else if (action == 2) {
+        registerUser(conn);
+    } else {
+        cout << "неверный выбор!\n";
+    }
 
     mysql_close(conn);
     return 0;
