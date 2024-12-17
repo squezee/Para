@@ -12,3 +12,105 @@ CREATE TABLE flights (
     departure_time DATETIME,
     arrival_time DATETIME
 );
+void showAllUsers(MYSQL* conn) {
+    string query = "SELECT id, login, role FROM users;";
+    if (mysql_query(conn, query.c_str()) == 0) {
+        MYSQL_RES* res = mysql_store_result(conn);
+        MYSQL_ROW row;
+
+        cout << "\nсписок пользователей:\n";
+        cout << "id | логин | роль\n";
+        while ((row = mysql_fetch_row(res))) {
+            cout << row[0] << " | " << row[1] << " | " << row[2] << endl;
+        }
+        mysql_free_result(res);
+    } else {
+        cerr << "ошибка выполнения запроса: " << mysql_error(conn) << endl;
+    }
+}
+void findFlightsByDeparture(MYSQL* conn) {
+    string destination, departure_time;
+    cout << "введите пункт назначения: ";
+    cin.ignore(); // очищаем буфер ввода
+    getline(cin, destination);
+    cout << "введите время отправления (YYYY-MM-DD HH:MM): ";
+    getline(cin, departure_time);
+
+    string query = "SELECT * FROM flights WHERE destination = '" + destination +
+                   "' AND departure_time >= '" + departure_time + "' ORDER BY departure_time ASC;";
+    if (mysql_query(conn, query.c_str()) == 0) {
+        MYSQL_RES* res = mysql_store_result(conn);
+        MYSQL_ROW row;
+
+        cout << "\nближайшие рейсы:\n";
+        while ((row = mysql_fetch_row(res))) {
+            cout << "номер рейса: " << row[1]
+                 << ", тип автобуса: " << row[2]
+                 << ", пункт назначения: " << row[3]
+                 << ", время отправления: " << row[4]
+                 << ", время прибытия: " << row[5] << endl;
+        }
+        mysql_free_result(res);
+    } else {
+        cerr << "ошибка выполнения запроса: " << mysql_error(conn) << endl;
+    }
+}
+void findFlightsByArrival(MYSQL* conn) {
+    string destination, arrival_time;
+    cout << "введите пункт назначения: ";
+    cin.ignore(); // очищаем буфер ввода
+    getline(cin, destination);
+    cout << "введите время прибытия (YYYY-MM-DD HH:MM): ";
+    getline(cin, arrival_time);
+
+    string query = "SELECT * FROM flights WHERE destination = '" + destination +
+                   "' AND arrival_time <= '" + arrival_time + "' ORDER BY arrival_time ASC;";
+    if (mysql_query(conn, query.c_str()) == 0) {
+        MYSQL_RES* res = mysql_store_result(conn);
+        MYSQL_ROW row;
+
+        cout << "\nближайшие рейсы:\n";
+        while ((row = mysql_fetch_row(res))) {
+            cout << "номер рейса: " << row[1]
+                 << ", тип автобуса: " << row[2]
+                 << ", пункт назначения: " << row[3]
+                 << ", время отправления: " << row[4]
+                 << ", время прибытия: " << row[5] << endl;
+        }
+        mysql_free_result(res);
+    } else {
+        cerr << "ошибка выполнения запроса: " << mysql_error(conn) << endl;
+    }
+}
+void adminMenu(MYSQL* conn) {
+    int choice;
+    while (true) {
+        cout << "\n1. показать все рейсы\n2. добавить рейс\n3. показать всех пользователей\n4. выйти\n";
+        cout << "выберите действие: ";
+        cin >> choice;
+
+        switch (choice) {
+            case 1: showAllFlights(conn); break;
+            case 2: addFlight(conn); break;
+            case 3: showAllUsers(conn); break;
+            case 4: return;
+            default: cout << "неверный выбор!\n";
+        }
+    }
+}
+void userMenu(MYSQL* conn) {
+    int choice;
+    while (true) {
+        cout << "\n1. показать все рейсы\n2. найти рейсы по отправлению\n3. найти рейсы по прибытию\n4. выйти\n";
+        cout << "выберите действие: ";
+        cin >> choice;
+
+        switch (choice) {
+            case 1: showAllFlights(conn); break;
+            case 2: findFlightsByDeparture(conn); break;
+            case 3: findFlightsByArrival(conn); break;
+            case 4: return;
+            default: cout << "неверный выбор!\n";
+        }
+    }
+}
