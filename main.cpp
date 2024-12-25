@@ -333,21 +333,39 @@ void addFlight(MYSQL* conn) {
         cerr << "ошибка добавления рейса: " << mysql_error(conn) << endl;
     }
 }
-
-void adminMenu(MYSQL* conn) {
+void userDataControl(MYSQL* conn){
     int choice;
     while (true) {
-        cout << "\nМодуль администратора:\n";
+        cout << "\nУправление учетными записями:\n";
+        cout << "1. показать всех пользователей\n";
+        cout << "2. добавить пользователя\n";
+        cout << "3. редактировать пользователя\n";
+        cout << "4. удалить пользователя\n";
+        cout << "5. назад\n";
+        cout << "выберите действие: ";
+        cin >> choice;
+
+        switch (choice) {
+            
+            case 1: showAllUsers(conn); break;
+            case 2: addUser(conn); break;
+            case 3: editUser(conn); break;
+            case 4: deleteUser(conn); break;
+            case 5: return;
+            default: cout << "неверный выбор!\n";
+        }
+    }
+}
+void workWithData(MYSQL* conn){
+    int choice;
+    while (true) {
+        cout << "\nРабота с данными:\n";
         cout << "1. показать все рейсы\n";
         cout << "2. добавить рейс\n";
         cout << "3. удалить рейс\n";
         cout << "4. редактировать рейс\n";
         cout << "5. отсортировать рейсы\n";
-        cout << "6. показать всех пользователей\n";
-        cout << "7. добавить пользователя\n";
-        cout << "8. редактировать пользователя\n";
-        cout << "9. удалить пользователя\n";
-        cout << "10. выйти\n";
+        cout << "6. назад\n";
         cout << "выберите действие: ";
         cin >> choice;
 
@@ -370,14 +388,28 @@ void adminMenu(MYSQL* conn) {
                 else cout << "неверный выбор!\n";
                 break;
             }
-            case 6: showAllUsers(conn); break;
-            case 7: addUser(conn); break;
-            case 8: editUser(conn); break;
-            case 9: deleteUser(conn); break;
-            case 10: return;
+            case 6: return;
             default: cout << "неверный выбор!\n";
         }
     }
+}
+void adminMenu(MYSQL* conn) {
+    int choice;
+    while (true) {
+        cout << "\nМодуль администратора:\n";
+        cout << "1. управление учетными записями\n";
+        cout << "2. работа с данными\n";
+        cout << "3. выйти\n";
+        cout << "выберите действие: ";
+        cin >> choice;
+        switch (choice) {
+            case 1: userDataControl(conn); break;
+            case 2: workWithData(conn); break;
+            case 3: return;
+            default: cout << "неверный выбор!\n";
+        }
+    }
+    
 }
 
 
@@ -385,7 +417,7 @@ void adminMenu(MYSQL* conn) {
 void userMenu(MYSQL* conn) {
     int choice;
     while (true) {
-        cout << "\n1. показать все рейсы\n2. найти рейсы по отправлению\n3. найти рейсы по прибытию\n4. выйти\n";
+        cout << "\n1. показать все рейсы\n2. найти рейсы по отправлению\n3. найти рейсы по прибытию\n4. отсортировать рейсы\n5. выйти\n";
         cout << "выберите действие: ";
         cin >> choice;
 
@@ -393,7 +425,21 @@ void userMenu(MYSQL* conn) {
             case 1: showAllFlights(conn); break;
             case 2: findFlightsByDeparture(conn); break;
             case 3: findFlightsByArrival(conn); break;
-            case 4: return;
+            case 4:  {
+                int sortOption;
+                cout << "\nСортировать по:\n";
+                cout << "1. номеру рейса\n";
+                cout << "2. типу автобуса\n";
+                cout << "3. пункту назначения\n";
+                cout << "выберите действие: ";
+                cin >> sortOption;
+                if (sortOption == 1) sortFlights(conn, "flight_number");
+                else if (sortOption == 2) sortFlights(conn, "bus_type");
+                else if (sortOption == 3) sortFlights(conn, "destination");
+                else cout << "неверный выбор!\n";
+                break;
+            };
+            case 5: return;
             default: cout << "неверный выбор!\n";
         }
     }
@@ -426,4 +472,3 @@ int main() {
     mysql_close(conn);
     return 0;
 }
-
