@@ -39,7 +39,12 @@ MYSQL* connectDB() {
     }
     return conn;
 }
-
+bool is_number(const std::string& s)
+{
+    std::string::const_iterator it = s.begin();
+    while (it != s.end() && std::isdigit(*it)) ++it;
+    return !s.empty() && it == s.end();
+}
 bool checkLogin(MYSQL* conn, const string& login, const string& password, User& user) {
     string query = "SELECT id, role FROM users WHERE login='" + login + "' AND password='" + password + "';";
     if (mysql_query(conn, query.c_str()) == 0) {
@@ -344,7 +349,10 @@ void userDataControl(MYSQL* conn){
         cout << "5. назад\n";
         cout << "выберите действие: ";
         cin >> choice;
-
+        if(!is_number(choice)){
+            cout << "неверный выбор!\n";
+            continue;
+        }
         switch (choice) {
             
             case 1: showAllUsers(conn); break;
@@ -368,7 +376,10 @@ void workWithData(MYSQL* conn){
         cout << "6. назад\n";
         cout << "выберите действие: ";
         cin >> choice;
-
+        if(!is_number(choice)){
+            cout << "неверный выбор!\n";
+            continue;
+        }
         switch (choice) {
             case 1: showAllFlights(conn); break;
             case 2: addFlight(conn); break;
@@ -382,6 +393,10 @@ void workWithData(MYSQL* conn){
                 cout << "3. пункту назначения\n";
                 cout << "выберите действие: ";
                 cin >> sortOption;
+                if(!is_number(sortOption)){
+                    cout << "неверный выбор!\n";
+                    continue;
+                }
                 if (sortOption == 1) sortFlights(conn, "flight_number");
                 else if (sortOption == 2) sortFlights(conn, "bus_type");
                 else if (sortOption == 3) sortFlights(conn, "destination");
@@ -402,6 +417,10 @@ void adminMenu(MYSQL* conn) {
         cout << "3. выйти\n";
         cout << "выберите действие: ";
         cin >> choice;
+        if(!is_number(choice)){
+            cout << "неверный выбор!\n";
+            continue;
+        }
         switch (choice) {
             case 1: userDataControl(conn); break;
             case 2: workWithData(conn); break;
@@ -420,7 +439,10 @@ void userMenu(MYSQL* conn) {
         cout << "\n1. показать все рейсы\n2. найти рейсы по отправлению\n3. найти рейсы по прибытию\n4. отсортировать рейсы\n5. выйти\n";
         cout << "выберите действие: ";
         cin >> choice;
-
+        if(!is_number(choice)){
+            cout << "неверный выбор!\n";
+            continue;
+        }
         switch (choice) {
             case 1: showAllFlights(conn); break;
             case 2: findFlightsByDeparture(conn); break;
@@ -433,6 +455,10 @@ void userMenu(MYSQL* conn) {
                 cout << "3. пункту назначения\n";
                 cout << "выберите действие: ";
                 cin >> sortOption;
+                if(!is_number(sortOption)){
+                    cout << "неверный выбор!\n";
+                    continue;
+                }
                 if (sortOption == 1) sortFlights(conn, "flight_number");
                 else if (sortOption == 2) sortFlights(conn, "bus_type");
                 else if (sortOption == 3) sortFlights(conn, "destination");
@@ -453,7 +479,10 @@ int main() {
     int action;
     cout << "1. войти\n2. зарегистрироваться\nвыберите действие: ";
     cin >> action;
-
+    if(!is_number(action)){
+                    cout << "неверный выбор!\n";
+                    return 1;
+                }
     if (action == 1) {
         loginUser(conn, currentUser);
         if (!currentUser.login.empty()) {
