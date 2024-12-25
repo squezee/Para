@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <limits>
 #include <mysql/mysql.h> // подключаем библиотеку mysql
 using namespace std;
 
@@ -205,7 +206,6 @@ void loginUser(MYSQL* conn, User& currentUser) {
     getline(cin, login);
     cout << "введите пароль: ";
     getline(cin, password);
-
     if (checkLogin(conn, login, password, currentUser)) {
         cout << "добро пожаловать, " << currentUser.login << "!\n";
     } else {
@@ -464,7 +464,7 @@ int main() {
 
     int action;
     cout << "1. войти\n2. зарегистрироваться\nвыберите действие: ";
-    action = getValidatedChoice();
+    cin >> action;
     
     if (action == 1) {
         loginUser(conn, currentUser);
