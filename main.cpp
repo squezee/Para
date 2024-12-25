@@ -49,18 +49,37 @@ bool checkLogin(MYSQL* conn, const string& login, const string& password, User& 
             user.id = stoi(row[0]);
             user.login = login;
             user.role = row[1];
+            mysql_free_result(res); // освобождаем результат запроса
             return true;
         }
+        mysql_free_result(res);
     }
     return false;
 }
 
+void loginUser(MYSQL* conn, User& currentUser) {
+    string login, password;
+    cout << "введите логин: ";
+    cin.ignore(); // очищаем буфер ввода
+    getline(cin, login);
+    cout << "введите пароль: ";
+    getline(cin, password);
+
+    if (checkLogin(conn, login, password, currentUser)) {
+        cout << "добро пожаловать, " << currentUser.login << "!\n";
+    } else {
+        cout << "неверный логин или пароль!\n";
+    }
+}
+
+
 void registerUser(MYSQL* conn) {
     string login, password;
     cout << "введите логин: ";
-    cin >> login;
+    cin.ignore(); // очищаем буфер ввода
+    getline(cin, login);
     cout << "введите пароль: ";
-    cin >> password;
+    getline(cin, password);
 
     string query = "INSERT INTO users (login, password, role) VALUES ('" + login + "', '" + password + "', 'user');";
     if (mysql_query(conn, query.c_str()) == 0) {
@@ -69,6 +88,7 @@ void registerUser(MYSQL* conn) {
         cerr << "ошибка регистрации: " << mysql_error(conn) << endl;
     }
 }
+
 
 void showAllFlights(MYSQL* conn) {
     string query = "SELECT * FROM flights;";
@@ -91,16 +111,18 @@ void showAllFlights(MYSQL* conn) {
 
 void addFlight(MYSQL* conn) {
     string flight_number, bus_type, destination, departure_time, arrival_time;
+
     cout << "введите номер рейса: ";
-    cin >> flight_number;
+    cin.ignore(); // очищаем буфер ввода
+    getline(cin, flight_number);
     cout << "введите тип автобуса: ";
-    cin >> bus_type;
+    getline(cin, bus_type);
     cout << "введите пункт назначения: ";
-    cin >> destination;
+    getline(cin, destination);
     cout << "введите время отправления (YYYY-MM-DD HH:MM): ";
-    cin >> departure_time;
+    getline(cin, departure_time);
     cout << "введите время прибытия (YYYY-MM-DD HH:MM): ";
-    cin >> arrival_time;
+    getline(cin, arrival_time);
 
     string query = "INSERT INTO flights (flight_number, bus_type, destination, departure_time, arrival_time) VALUES ('" +
                    flight_number + "', '" + bus_type + "', '" + destination + "', '" + departure_time + "', '" + arrival_time + "');";
@@ -152,21 +174,13 @@ int main() {
     cin >> action;
 
     if (action == 1) {
-        string login, password;
-        cout << "введите логин: ";
-        cin >> login;
-        cout << "введите пароль: ";
-        cin >> password;
-
-        if (checkLogin(conn, login, password, currentUser)) {
-            cout << "добро пожаловать, " << currentUser.login << "!\n";
+        loginUser(conn, currentUser);
+        if (!currentUser.login.empty()) {
             if (currentUser.role == "admin") {
                 adminMenu(conn);
             } else {
                 userMenu(conn);
             }
-        } else {
-            cout << "неверный логин или пароль!\n";
         }
     } else if (action == 2) {
         registerUser(conn);
@@ -177,3 +191,4 @@ int main() {
     mysql_close(conn);
     return 0;
 }
+
