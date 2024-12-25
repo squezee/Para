@@ -7,8 +7,8 @@ using namespace std;
 // данные для подключения к БД
 const string DB_HOST = "localhost";
 const string DB_USER = "root";
-const string DB_PASS = "password";
-const string DB_NAME = "bus_schedule";
+const string DB_PASS = "MegaPassword123!!!!!";
+const string DB_NAME = "bus_shedule";
 
 // структура для рейсов
 struct Flight {
